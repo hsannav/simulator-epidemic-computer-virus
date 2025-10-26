@@ -97,6 +97,18 @@ def calculate_jacobian(S, A, I, R, args):
     
     return J
 
+def check_stability(eigenvalues):
+    tolerance = 1e-9
+    real_parts = np.real(eigenvalues)
+    
+    if np.all(real_parts <= tolerance):
+        if np.any(np.abs(real_parts) < tolerance):
+            return "Lyapunov stable (or marginally stable)", "gray"
+        else:
+            return "asymptotically stable", "green"
+    else:
+        return "unstable", "red"
+
 st.set_page_config(layout="wide")
 
 st.title("Epidemiological Models Applied to Viruses in Computer Networks")
@@ -297,17 +309,17 @@ The total population is $T = S_0 + A_0 + I_0 + R_0$.
 
 T_pop = S0 + A0 + I0 + R0
 
-st.subheader("Point $P_1 = (S=0, A=T, I=0, R=0)$")
+st.markdown("---")
+st.subheader("Disease-free point $P_1 = (S=0, A=T, I=0, R=0)$")
 st.markdown("This point represents a network where all computers are antidotal.")
 S_p1, A_p1, I_p1, R_p1 = 0.0, T_pop, 0.0, 0.0
 J_p1 = calculate_jacobian(S_p1, A_p1, I_p1, R_p1, params)
-eig_p1_numeric = np.linalg.eigvals(J_p1)
+eig_p1 = np.linalg.eigvals(J_p1)
+stability_p1, color_p1 = check_stability(eig_p1)
+st.markdown(f"**Stability:** :{color_p1}[{stability_p1}]")
 
-st.markdown("Numerically calculated Jacobian at $P_1$:")
-st.dataframe(pd.DataFrame(J_p1, columns=['S', 'A', 'I', 'R'], index=['dS/dt', 'dI/dt', 'dR/dt', 'dA/dt']).style.format("{:.2f}"))
-
-st.markdown("Numerically calculated eigenvalues at $P_1$:")
-st.write([f"{e.real:.2f} + {e.imag:.2f}j" for e in eig_p1_numeric])
+st.markdown("Numerically calculated eigenvalues:")
+st.write([f"{e.real:.2f} + {e.imag:.2f}j" for e in eig_p1])
 
 st.markdown("Theoretical eigenvalues from paper:")
 lambda1_p1 = -T_pop * alpha
@@ -318,20 +330,18 @@ st.markdown(f"- $\lambda_1 = -T \cdot \\alpha = {lambda1_p1:.2f}$")
 st.markdown(f"- $\lambda_2 = \\beta_{{AI}} \cdot T - \sigma_{{IS}} - \delta = {lambda2_p1:.2f}$")
 st.markdown(f"- $\lambda_3 = -\sigma_{{RS}} = {lambda3_p1:.2f}$")
 st.markdown(f"- $\lambda_4 = 0 = {lambda4_p1:.2f}$")
-st.markdown("For stability, all real parts of eigenvalues must be non-positive. The paper's condition for stability at $P_1$ is $\lambda_2 < 0$.")
 
-
-st.subheader("Point $P_2 = (S=T, A=0, I=0, R=0)$")
+st.markdown("---")
+st.subheader("Disease-free point $P_2 = (S=T, A=0, I=0, R=0)$")
 st.markdown("This point represents a network where all computers are susceptible.")
 S_p2, A_p2, I_p2, R_p2 = T_pop, 0.0, 0.0, 0.0
 J_p2 = calculate_jacobian(S_p2, A_p2, I_p2, R_p2, params)
-eig_p2_numeric = np.linalg.eigvals(J_p2)
+eig_p2 = np.linalg.eigvals(J_p2)
+stability_p2, color_p2 = check_stability(eig_p2)
+st.markdown(f"**Stability:** :{color_p2}[{stability_p2}]")
 
-st.markdown("Numerically calculated Jacobian at $P_2$:")
-st.dataframe(pd.DataFrame(J_p2, columns=['S', 'A', 'I', 'R'], index=['dS/dt', 'dI/dt', 'dR/dt', 'dA/dt']).style.format("{:.2f}"))
-
-st.markdown("Numerically calculated eigenvalues at $P_2$:")
-st.write([f"{e.real:.2f} + {e.imag:.2f}j" for e in eig_p2_numeric])
+st.markdown("Numerically calculated eigenvalues:")
+st.write([f"{e.real:.2f} + {e.imag:.2f}j" for e in eig_p2])
 
 st.markdown("Theoretical eigenvalues from paper:")
 lambda1_p2 = 0.0
@@ -342,4 +352,68 @@ st.markdown(f"- $\lambda_1 = 0 = {lambda1_p2:.2f}$")
 st.markdown(f"- $\lambda_2 = \\beta_{{SI}} \cdot T - \sigma_{{IS}} - \delta = {lambda2_p2:.2f}$")
 st.markdown(f"- $\lambda_3 = -\sigma_{{RS}} = {lambda3_p2:.2f}$")
 st.markdown(f"- $\lambda_4 = \\alpha \cdot T = {lambda4_p2:.2f}$")
-st.markdown("The paper states this point is always unstable because $\lambda_4 = \\alpha \cdot T$ is positive (assuming $\\alpha > 0$ and $T > 0$).")
+st.markdown("The paper states this point is always unstable because $\lambda_4 > 0$ (assuming $\\alpha, T > 0$).")
+
+st.markdown("---")
+st.subheader("Endemic point $P_3 = (S^*, 0, I^*, R^*)$")
+st.markdown("This endemic point represents a network with no antidotal computers ($A=0$).")
+try:
+    S_p3 = (sigma_IS + delta) / beta_SI
+    A_p3 = 0.0
+    
+    if S_p3 >= T_pop or (delta + sigma_RS) == 0:
+        raise ValueError("Point not physically valid (S >= T or division by zero)")
+    
+    I_p3 = sigma_RS * (T_pop - S_p3) / (delta + sigma_RS)
+    R_p3 = delta * I_p3 / sigma_RS
+    
+    if I_p3 < 0 or R_p3 < 0:
+        raise ValueError("Point not physically valid (negative populations)")
+        
+    st.markdown(f"Calculated Point: $S={S_p3:.2f}$, $A={A_p3:.2f}$, $I={I_p3:.2f}$, $R={R_p3:.2f}$")
+    J_p3 = calculate_jacobian(S_p3, A_p3, I_p3, R_p3, params)
+    eig_p3 = np.linalg.eigvals(J_p3)
+    stability_p3, color_p3 = check_stability(eig_p3)
+    st.markdown(f"**Stability:** :{color_p3}[{stability_p3}]")
+    st.markdown("Numerically calculated eigenvalues:")
+    st.write([f"{e.real:.2f} + {e.imag:.2f}j" for e in eig_p3])
+
+except (ValueError, ZeroDivisionError) as e:
+    st.markdown(f":gray[This endemic point is not valid for the current parameters.] (Reason: {e})")
+
+st.markdown("---")
+st.subheader("Endemic point $P_4 = (S^*, A^*, I^*, R^*)$")
+st.markdown("This endemic point represents a network where all four compartments are non-zero.")
+
+try:
+    T_crit = (sigma_IS + delta) / beta_AI
+    
+    if T_pop <= T_crit:
+        raise ValueError(f"Point not valid. $T \le T_{{crit}}$ ($T={T_pop:.2f}, T_{{crit}}={T_crit:.2f}$)")
+    
+    denominator = (beta_AI - beta_SI) / alpha + (sigma_RS + delta) / sigma_RS
+    if denominator == 0:
+        raise ZeroDivisionError("Denominator is zero.")
+        
+    I_p4 = (T_pop - T_crit) / denominator
+    
+    if I_p4 <= 0:
+         raise ValueError("Point not valid ($I \le 0$)")
+         
+    S_p4 = beta_AI * I_p4 / alpha
+    A_p4 = (sigma_IS + delta) / beta_AI - (beta_SI * I_p4 / alpha)
+    R_p4 = delta * I_p4 / sigma_RS
+    
+    if S_p4 < 0 or A_p4 < 0 or R_p4 < 0:
+        raise ValueError("Point not physically valid (negative populations)")
+    
+    st.markdown(f"Calculated point: $S={S_p4:.2f}$, $A={A_p4:.2f}$, $I={I_p4:.2f}$, $R={R_p4:.2f}$")
+    J_p4 = calculate_jacobian(S_p4, A_p4, I_p4, R_p4, params)
+    eig_p4 = np.linalg.eigvals(J_p4)
+    stability_p4, color_p4 = check_stability(eig_p4)
+    st.markdown(f"**Stability:** :{color_p4}[{stability_p4}]")
+    st.markdown("Numerically calculated eigenvalues:")
+    st.write([f"{e.real:.2f} + {e.imag:.2f}j" for e in eig_p4])
+
+except (ValueError, ZeroDivisionError) as e:
+    st.markdown(f":gray[This endemic point is not valid for the current parameters.] (Reason: {e})")
