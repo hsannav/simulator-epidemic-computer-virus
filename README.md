@@ -42,8 +42,8 @@ To run this project locally, ensure you have Python installed.
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/sair-model-simulation.git
-   cd sair-model-simulation
+   git clone https://github.com/hsannav/simulator-epidemic-computer-virus.git
+   cd simulator-epidemic-computer-virus
    ```
 
 2. Create a virtual environment (optional but recommended):
