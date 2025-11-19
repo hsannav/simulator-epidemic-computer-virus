@@ -15,8 +15,7 @@ This tool is designed for educational and analytical purposes, allowing users to
 
 * **Interactive Simulation:** Adjust model parameters (infection rates, recovery rates, etc.) and initial conditions in real-time via the sidebar.
 * **Dynamic Visualization:** View interactive time-series plots of the S, A, I, and R populations using Plotly.
-* **Numerical Analysis:** * Compares custom implementations of Euler (1st order), Heun (2nd order), and Runge-Kutta (4th order) methods against SciPy's solvers.
-    * Calculates Error metrics (RMSE, MAE, MAPE) for the manual solvers.
+* **Numerical Analysis:** Compares custom implementations of Euler (1st order), Heun (2nd order), and Runge-Kutta (4th order) methods against SciPy's solvers and calculates error metrics (RMSE, MAE, MAPE) for the manual solvers against best-performing SciPy solver.
 * **Stability Analysis:** Automatically computes the Jacobian matrix for disease-free and endemic equilibrium points to determine system stability (Lyapunov stable, asymptotically stable, or unstable).
 
 ## Mathematical Model
